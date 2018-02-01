@@ -71,6 +71,19 @@ footer {
     color: white;
     outline: 0;
 }
+
+.edit-books-container {
+    margin: 1em;
+}
+.edit-books-btn {
+    background: #3a63f7;
+    color: white;
+    border: transparent;
+    border-radius: 1em;
+    height: 2em;
+    width: 10em;
+    box-shadow: 1px 1px 5px rgb(36, 36, 36);
+}
 a:hover {
     text-decoration: none;
     color: white;

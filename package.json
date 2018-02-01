@@ -1,0 +1,20 @@
+{
+  "name": "elm_book_progress",
+  "version": "1.0.0",
+  "description": "elm app to keep progression of various technical books",
+  "main": "elm_app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "elm make client.elm --output elm_app.js && elm reactor"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/showlet/elm_book_progress.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/showlet/elm_book_progress/issues"
+  },
+  "homepage": "https://github.com/showlet/elm_book_progress#readme"
+}

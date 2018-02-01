@@ -34,9 +34,9 @@ type alias Model =
 type alias Book =
     { id : String
     , title : String
+    , author : Maybe String
     , link : Maybe String
     , progression : Int
-    , author : Maybe String
     }    
 
 safeString : Maybe String -> String
@@ -104,9 +104,9 @@ bookDecoder =
     JP.decode Book
         |> required "id"  string
         |> required "title" string
+        |> optional "author" (JD.map Just string) Nothing
         |> optional "link" (JD.map Just string) Nothing
         |> required "progression" int
-        |> optional "author" (JD.map Just string) Nothing
 
 
 booksDecoder : Decoder (List Book)
@@ -127,27 +127,39 @@ view model =
     div [] 
         [ h1 [ class "book-index-title" ] [ text model.title ]
         , div [ class "books-list" ] 
-              [ table [ class "books-table" ] 
-                      ( List.concat [ [ thead [] [] ] , (userTableRow model) ])
+              [ (userTable model) ] 
+        , div [ class "edit-books-container" ]
+              [ button [ class "edit-books-btn" ] 
+                       [ text "Edit books"] 
               ]
-        , p [] [ text model.message ]
+        , p [] [ text model.message ] -- error message if one
         ]
 
-userTableRow : Model -> List (Html Msg)
-userTableRow model = 
+userTable : Model -> Html Msg
+userTable model =
+    table [ class "books-table" ]
+          ( List.concat [ [ thead [] [] ], (userTableRows model) ])
+
+userTableRows : Model -> List (Html Msg)
+userTableRows model =
     model.books
-    |> List.sortBy .progression
-    |> List.reverse
-    |> List.map (\x -> tr [ class "book-entry"] 
-                    [ td [ class "book-name-col"] 
-                         [ a [ class "book-name", href (safeString x.link) ] 
-                             [ text (String.concat [x.title, " - ", (safeString x.author) ]) ]
-                         ]
-                    , td [ class "book-progression-col" ] 
-                         [  
-                            if x.progression == 100 then 
-                                span [class "book-completed"] [ text "Completed" ]
-                            else 
-                                span [] [text (String.concat [(toString x.progression), "%"]) ]
-                         ]
-                    ] ) 
+        |> List.sortBy .progression
+        |> List.reverse
+        |> List.map (\book -> tr [ class "book-entry" ]
+                                 (userTableRow book)) 
+
+userTableRow : Book -> List (Html Msg)
+userTableRow book = 
+    [ td [ class "book-name-col"] 
+       [ a [ class "book-name", href (safeString book.link) ] 
+            [ text (String.concat [book.title, " - ", (safeString book.author) ]) ] 
+       ]
+    , td [ class "book-progression-col" ] 
+         [  
+            if book.progression == 100 then 
+                span [class "book-completed"] [ text "Completed" ]
+            else 
+                span [] [text (String.concat [(toString book.progression), "%"]) ]
+         ]
+    ]
+                    
