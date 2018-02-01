@@ -3,7 +3,8 @@ module App exposing (..)
 import Http
 import Html as H exposing (Html, div, p, h1, a, text, program, button, br, table, tr, td, th, span, thead)
 import Html.Attributes as HT exposing (class, href)
-import Json.Decode as JD exposing (Decoder, at, list, map2, field, int, string)
+import Json.Decode.Pipeline as JP exposing (decode, required, optional)
+import Json.Decode as JD exposing (Decoder, at, list, field, int, string)
 
 -- Main
 
@@ -17,10 +18,10 @@ main =
         }
 
 apiUrl : String
-apiUrl = "http://localhost:3000/"
+apiUrl = "http://localhost:3001/"
 
 booksUrl : String
-booksUrl = apiUrl ++ "books.json"
+booksUrl = apiUrl ++ "books"
 
 -- Model
 
@@ -31,12 +32,24 @@ type alias Model =
     }
 
 type alias Book =
-    { id : Int
+    { id : String
     , title : String
-    , link : String
-    , progress : Int
-    , author : String
+    , link : Maybe String
+    , progression : Int
+    , author : Maybe String
     }    
+
+safeString : Maybe String -> String
+safeString str =   
+    case str of 
+    Just s  -> s
+    Nothing -> ""
+
+safeInt : Maybe Int -> Int
+safeInt x =
+    case x of 
+    Just x  -> x
+    Nothing -> 0
 
 init : (Model, Cmd Msg)
 init = 
@@ -88,12 +101,13 @@ booksGetReq =
 
 bookDecoder : Decoder Book
 bookDecoder =
-    JD.map5 Book
-        (field "id" int)
-        (field "title" string)
-        (field "link" string)
-        (field "progress" int)
-        (field "author" string)
+    JP.decode Book
+        |> required "id"  string
+        |> required "title" string
+        |> optional "link" (JD.map Just string) Nothing
+        |> required "progression" int
+        |> optional "author" (JD.map Just string) Nothing
+
 
 booksDecoder : Decoder (List Book)
 booksDecoder = 
@@ -122,18 +136,18 @@ view model =
 userTableRow : Model -> List (Html Msg)
 userTableRow model = 
     model.books
-    |> List.sortBy .progress
+    |> List.sortBy .progression
     |> List.reverse
     |> List.map (\x -> tr [ class "book-entry"] 
                     [ td [ class "book-name-col"] 
-                         [ a [ class "book-name", href x.link ] 
-                             [ text (String.concat [(toString x.title), " - ", (toString x.author) ]) ]
+                         [ a [ class "book-name", href (safeString x.link) ] 
+                             [ text (String.concat [x.title, " - ", (safeString x.author) ]) ]
                          ]
                     , td [ class "book-progression-col" ] 
                          [  
-                            if x.progress == 100 then 
+                            if x.progression == 100 then 
                                 span [class "book-completed"] [ text "Completed" ]
                             else 
-                                span [] [text (String.concat [(toString x.progress), "%"]) ]
+                                span [] [text (String.concat [(toString x.progression), "%"]) ]
                          ]
                     ] ) 
