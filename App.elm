@@ -1,8 +1,9 @@
 module App exposing (..)
 
 import Http
-import Html as H exposing (Html, div, p, h1, a, text, program, button, br, table, tr, td, th, span, thead)
-import Html.Attributes as HT exposing (class, href)
+import Html as H exposing (Html, form, div, p, h1, a, text, program, button, br, table, tr, td, th, span, thead, input)
+import Html.Attributes as HT exposing (class, href, type_, value)
+import Html.Events as HV exposing (onClick)
 import Json.Decode.Pipeline as JP exposing (decode, required, optional)
 import Json.Decode as JD exposing (Decoder, at, list, field, int, string)
 
@@ -29,6 +30,7 @@ type alias Model =
     { title : String
     , books : List Book
     , message : String
+    , editMode : Bool
     }
 
 type alias Book =
@@ -53,13 +55,14 @@ safeInt x =
 
 init : (Model, Cmd Msg)
 init = 
-    (Model "Technical Books progression" [] "", getBooks)
+    (Model "Technical Books progression" [] "" False, getBooks)
 
 -- Messages
 
 type Msg 
     = NoOp
     | HttpGetBooks (Result Http.Error (List Book))
+    | ToggleEditMode
 
 -- Update
 
@@ -74,6 +77,9 @@ update msg model =
 
         HttpGetBooks (Err error) ->
             ({ model | message = toString error }, Cmd.none)
+
+        ToggleEditMode ->
+            ({ model | editMode = (not model.editMode)}, Cmd.none)
 
 
 -- Http stuff
@@ -126,9 +132,11 @@ view : Model -> Html Msg
 view model = 
     div [] 
         [ h1 [ class "book-index-title" ] [ text model.title ]
-        , div [ class "books-list" ] 
-              [ (userTable model) ] 
-        , div [ class "edit-books-container" ]
+        , form [ class "books-list" ] 
+               [ (userTable model)  ] 
+        , div [ onClick ToggleEditMode
+              , class "edit-books-container" 
+              ]
               [ button [ class "edit-books-btn" ] 
                        [ text "Edit books"] 
               ]
@@ -138,7 +146,10 @@ view model =
 userTable : Model -> Html Msg
 userTable model =
     table [ class "books-table" ]
-          ( List.concat [ [ thead [] [] ], (userTableRows model) ])
+          ( List.concat [ [ thead [] 
+                                  [] 
+                          ], 
+                          (userTableRows model) ])
 
 userTableRows : Model -> List (Html Msg)
 userTableRows model =
@@ -146,20 +157,42 @@ userTableRows model =
         |> List.sortBy .progression
         |> List.reverse
         |> List.map (\book -> tr [ class "book-entry" ]
-                                 (userTableRow book)) 
+                                 (if model.editMode then 
+                                    (userTableRowEdit book)
+                                 else
+                                    (userTableRow book))
+                                 ) 
 
 userTableRow : Book -> List (Html Msg)
 userTableRow book = 
     [ td [ class "book-name-col"] 
-       [ a [ class "book-name", href (safeString book.link) ] 
-            [ text (String.concat [book.title, " - ", (safeString book.author) ]) ] 
-       ]
+         [ a [ class "book-name", href (safeString book.link) ] 
+             [ text (String.concat [book.title, " - ", (safeString book.author) ]) ] 
+         ]
     , td [ class "book-progression-col" ] 
          [  
             if book.progression == 100 then 
-                span [class "book-completed"] [ text "Completed" ]
+                span [ class "book-completed" ] 
+                     [ text "Completed" ]
             else 
-                span [] [text (String.concat [(toString book.progression), "%"]) ]
+                span [] 
+                     [ text (String.concat [(toString book.progression), "%"]) ]
          ]
     ]
                     
+userTableRowEdit : Book -> List (Html Msg)
+userTableRowEdit book =
+    [ td [ class "book-name-col" ] 
+         [ input [ type_ "text", value book.title ] 
+                 []
+         , span  [] 
+                 [ text " - " ]
+         , input [type_ "text", value (safeString book.author) ] 
+                 []
+         ]
+    , td [ class "book-progression-col" ] 
+         [
+           input [ type_ "number", value (toString book.progression) ]
+                 []
+         ]
+    ]
