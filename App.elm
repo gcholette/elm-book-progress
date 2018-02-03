@@ -1,7 +1,7 @@
 module App exposing (..)
 
 import Http
-import Html as H exposing (Html, form, div, p, h1, a, text, program, button, br, table, tr, td, th, span, thead, input)
+import Html as H exposing (Html, form, div, p, h1, a, i, text, program, button, br, table, tr, td, th, span, thead, input)
 import Html.Attributes as HT exposing (class, href, type_, value)
 import Html.Events as HV exposing (onClick)
 import Json.Decode.Pipeline as JP exposing (decode, required, optional)
@@ -90,6 +90,11 @@ update msg model =
 
 -- Http stuff
 
+reqHeaders : List Http.Header
+reqHeaders = [ Http.header "Access-Control-Allow-Origin" "*"
+             , Http.header "Content-type" "application/json"
+             ]
+
 postNewBook : Cmd Msg
 postNewBook =
     let
@@ -100,9 +105,7 @@ postNewBook =
 booksPostReq : Http.Request Book
 booksPostReq = 
     { method = "POST"
-    , headers = [ Http.header "Access-Control-Allow-Origin" "*"
-                , Http.header "Content-type" "application/json"
-                ]
+    , headers = reqHeaders
     , url = booksUrl
     , body = Http.emptyBody
     , expect = Http.expectJson bookDecoder
@@ -241,8 +244,11 @@ userTableRowEdit book =
                  []
          ]
     , td [ class "book-progression-col" ] 
-         [
-           input [ type_ "number", value (toString book.progression) ]
-                 []
+         [ div [ class "number-section"]
+               [ input [ type_ "number", value (toString book.progression) ]
+                       []
+               , i [ class "fas fa-trash-alt delete-icon" ] 
+                   []  
+               ]
          ]
     ]
