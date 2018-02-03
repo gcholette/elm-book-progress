@@ -2,10 +2,11 @@ module App exposing (..)
 
 import Http
 import Html as H exposing (Html, form, div, p, h1, a, i, text, program, button, br, table, tr, td, th, span, thead, input)
-import Html.Attributes as HT exposing (class, href, type_, value)
-import Html.Events as HV exposing (onClick)
+import Html.Attributes as HT exposing (class, href, type_, value, placeholder)
+import Html.Events as HV exposing (on, onClick, onBlur, targetValue)
 import Json.Decode.Pipeline as JP exposing (decode, required, optional)
 import Json.Decode as JD exposing (Decoder, at, list, field, int, string)
+import Json.Encode as JE exposing (Value)
 
 -- Main
 
@@ -41,17 +42,18 @@ type alias Book =
     , progression : Int
     }    
 
+type alias Id = String
+type alias Title = String 
+type alias Author = String 
+type alias Link = String 
+type alias Progression = Int 
+
+
 safeString : Maybe String -> String
-safeString str =   
-    case str of 
-    Just s  -> s
-    Nothing -> ""
+safeString str = Maybe.withDefault "" str
 
 safeInt : Maybe Int -> Int
-safeInt x =
-    case x of 
-    Just x  -> x
-    Nothing -> 0
+safeInt x = Maybe.withDefault 0 x
 
 init : (Model, Cmd Msg)
 init = 
@@ -62,8 +64,13 @@ init =
 type Msg 
     = HttpGetBooks (Result Http.Error (List Book))
     | HttpPostCreateBook (Result Http.Error Book)
+    | HttpPostUpdateBook (Result Http.Error Book)
+    | HttpDeleteBook (Result Http.Error String)
     | ToggleEditMode
     | CreateBook
+    | DeleteBook Book
+    | UpdateBookTitle Book Title
+    | UpdateBookAuthor Book Author
 
 -- Update
 
@@ -82,28 +89,106 @@ update msg model =
         HttpPostCreateBook (Err error) ->
             ({ model | message = toString error }, Cmd.none)
 
+        HttpPostUpdateBook (Ok book) ->
+            (model, Cmd.none)
+
+        HttpPostUpdateBook (Err error) ->
+            ({ model | message = toString error }, Cmd.none)
+
+        HttpDeleteBook (Ok str) ->
+            (model, getBooks)
+
+        HttpDeleteBook (Err error) ->
+            ({ model | message = toString error }, Cmd.none)
+
         ToggleEditMode ->
             ({ model | editMode = (not model.editMode)}, Cmd.none)
 
         CreateBook ->
             (model, postNewBook)
 
+        UpdateBookTitle book newTitle ->
+            ({ model | books = (List.map (\bk ->
+                if bk == book then
+                    { bk | title = newTitle}
+                else
+                    bk
+            ) model.books) }, updateBookTitle (book.id, newTitle))
+
+        UpdateBookAuthor book newAuthor ->
+            ({ model | books = (List.map (\bk ->
+                if bk == book then
+                    { bk | author = Just newAuthor }
+                else
+                    bk
+            ) model.books) }, updateBookAuthor (book.id, newAuthor))
+
+        DeleteBook book ->
+            (model, deleteById book.id)
+
 -- Http stuff
 
+updateBookTitle : (Id, Title) -> Cmd Msg
+updateBookTitle (id, title) = 
+     let
+         request = 
+            booksPostUpdateReq (id, (Http.jsonBody (bookTitleJson (id, title)))) 
+     in
+        Http.send HttpPostUpdateBook request
+
+updateBookAuthor : (Id, Author) -> Cmd Msg
+updateBookAuthor (id, author) = 
+     let
+         request = 
+            booksPostUpdateReq (id, (Http.jsonBody (bookAuthorJson (id, author)))) 
+     in
+        Http.send HttpPostUpdateBook request
+
+deleteById : String -> Cmd Msg
+deleteById id =
+    let
+        request = bookDeleteReq id
+    in
+        Http.send HttpDeleteBook request  
+
 reqHeaders : List Http.Header
-reqHeaders = [ Http.header "Access-Control-Allow-Origin" "*"
-             , Http.header "Content-type" "application/json"
-             ]
+reqHeaders = 
+    [ Http.header "Access-Control-Allow-Origin" "*"
+    ]
 
 postNewBook : Cmd Msg
 postNewBook =
     let
-        request = booksPostReq
+        request = booksPostEmptyReq
     in
         Http.send HttpPostCreateBook request
 
-booksPostReq : Http.Request Book
-booksPostReq = 
+bookDeleteReq : String -> Http.Request String
+bookDeleteReq id = 
+    { method = "DELETE"
+    , headers = reqHeaders
+    , url = booksUrl ++ "/" ++ id
+    , body = Http.emptyBody
+    , expect = Http.expectString
+    , timeout = Nothing
+    , withCredentials = False
+    } 
+    |> Http.request 
+
+booksPostUpdateReq : (Id, Http.Body) -> Http.Request Book
+booksPostUpdateReq (id, json) = 
+    { method = "POST"
+    , headers = reqHeaders
+    , url = booksUrl ++ "/" ++ id
+    , body = json
+    , expect = Http.expectJson bookDecoder
+    , timeout = Nothing
+    , withCredentials = False
+    } 
+    |> Http.request 
+    
+booksPostEmptyReq : Http.Request Book
+booksPostEmptyReq = 
     { method = "POST"
     , headers = reqHeaders
     , url = booksUrl
@@ -124,9 +209,7 @@ getBooks =
 booksGetReq : Http.Request (List Book)
 booksGetReq = 
     { method = "GET"
-    , headers = [ Http.header "Access-Control-Allow-Origin" "*"
-                , Http.header "Content-type" "application/json"
-                ]
+    , headers = reqHeaders 
     , url = booksUrl
     , body = Http.emptyBody
     , expect = Http.expectJson booksDecoder
@@ -134,6 +217,20 @@ booksGetReq =
     , withCredentials = False
     } 
     |> Http.request 
+
+bookTitleJson : (Id, Title) -> JE.Value
+bookTitleJson (id, title) =
+    JE.object
+      [ ("_id", JE.string id)   
+      , ("title", JE.string title)   
+      ]
+
+bookAuthorJson : (Id, Author) -> JE.Value
+bookAuthorJson (id, author) =
+    JE.object
+      [ ("_id", JE.string id)
+      , ("author", JE.string author)   
+      ]
 
 bookDecoder : Decoder Book
 bookDecoder =
@@ -149,6 +246,9 @@ booksDecoder : Decoder (List Book)
 booksDecoder = 
     list bookDecoder
 
+onBlurTarget : (String -> msg) -> H.Attribute msg
+onBlurTarget tagger =
+    on "blur" (JD.map tagger targetValue)
 
 -- Subscriptions
 
@@ -236,19 +336,38 @@ userTableRow book =
 userTableRowEdit : Book -> List (Html Msg)
 userTableRowEdit book =
     [ td [ class "book-name-col" ] 
-         [ input [ type_ "text", value book.title ] 
-                 []
-         , span  [] 
-                 [ text " - " ]
-         , input [ type_ "text", value (safeString book.author) ] 
-                 []
+         [ (viewEditTitle book)
+         , span  [] [ text " - " ]
+         , (viewEditAuthor book) 
          ]
     , td [ class "book-progression-col" ] 
          [ div [ class "number-section"]
                [ input [ type_ "number", value (toString book.progression) ]
                        []
-               , i [ class "fas fa-trash-alt delete-icon" ] 
-                   []  
+               , span [ onClick (DeleteBook book) ] 
+                      [ i [ class "fas fa-trash-alt delete-icon" ] 
+                          []
+                      ]  
                ]
          ]
     ]
+
+viewEditTitle : Book -> Html Msg
+viewEditTitle book =
+    input [ type_ "text"
+          , value book.title 
+          , onBlurTarget (UpdateBookTitle book)
+          , placeholder "Title"
+          ] 
+          []
+
+
+viewEditAuthor : Book -> Html Msg
+viewEditAuthor book = 
+    input [ type_ "text"
+          , value (safeString book.author) 
+          , onBlurTarget (UpdateBookAuthor book)
+          , placeholder "Author"
+          ] 
+          []
+
