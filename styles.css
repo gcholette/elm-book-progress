@@ -95,12 +95,22 @@ input {
 }
 .edit-books-btn {
     background: #3a63f7;
+    box-shadow: 0px 0px 8px #566fc8; 
     color: white;
     border: transparent;
     border-radius: 0.7em;
     height: 2em;
     width: 10em;
-    box-shadow: 1px 1px 5px rgb(36, 36, 36);
+}
+.add-btn {
+    background: #3a63f7;
+    box-shadow: 0px 0px 8px #566fc8;
+    border: 0px;
+    height: 2.1em;
+    width: 2.1em;
+    border-radius: 10em;
+    color: white;
+    font-size: 17px;
 }
 a:hover {
     text-decoration: none;

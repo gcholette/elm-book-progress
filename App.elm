@@ -60,29 +60,56 @@ init =
 -- Messages
 
 type Msg 
-    = NoOp
-    | HttpGetBooks (Result Http.Error (List Book))
+    = HttpGetBooks (Result Http.Error (List Book))
+    | HttpPostCreateBook (Result Http.Error Book)
     | ToggleEditMode
+    | CreateBook
 
 -- Update
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of 
-        NoOp ->
-            (model, Cmd.none)
-
         HttpGetBooks (Ok books) ->
             ({ model | books = books }, Cmd.none)
 
         HttpGetBooks (Err error) ->
             ({ model | message = toString error }, Cmd.none)
 
+        HttpPostCreateBook (Ok book) ->
+            ({ model | books = book :: model.books}, Cmd.none)
+
+        HttpPostCreateBook (Err error) ->
+            ({ model | message = toString error }, Cmd.none)
+
         ToggleEditMode ->
             ({ model | editMode = (not model.editMode)}, Cmd.none)
 
+        CreateBook ->
+            (model, postNewBook)
 
 -- Http stuff
+
+postNewBook : Cmd Msg
+postNewBook =
+    let
+        request = booksPostReq
+    in
+        Http.send HttpPostCreateBook request
+
+booksPostReq : Http.Request Book
+booksPostReq = 
+    { method = "POST"
+    , headers = [ Http.header "Access-Control-Allow-Origin" "*"
+                , Http.header "Content-type" "application/json"
+                ]
+    , url = booksUrl
+    , body = Http.emptyBody
+    , expect = Http.expectJson bookDecoder
+    , timeout = Nothing
+    , withCredentials = False
+    } 
+    |> Http.request 
 
 getBooks : Cmd Msg
 getBooks =
@@ -103,12 +130,12 @@ booksGetReq =
     , timeout = Nothing
     , withCredentials = False
     } 
-        |> Http.request 
+    |> Http.request 
 
 bookDecoder : Decoder Book
 bookDecoder =
     JP.decode Book
-        |> required "id"  string
+        |> required "_id"  string
         |> required "title" string
         |> optional "author" (JD.map Just string) Nothing
         |> optional "link" (JD.map Just string) Nothing
@@ -131,16 +158,37 @@ subscriptions model =
 view : Model -> Html Msg
 view model = 
     div [] 
-        [ h1 [ class "book-index-title" ] [ text model.title ]
+        [ h1 [ class "book-index-title" ] 
+             [ text model.title ]
         , form [ class "books-list" ] 
-               [ (userTable model)  ] 
+               [ (userTable model)
+               , (if model.editMode then 
+                    viewAddBtn
+                  else
+                    viewEmpty 
+                 )
+               ] 
         , div [ onClick ToggleEditMode
               , class "edit-books-container" 
               ]
               [ button [ class "edit-books-btn" ] 
                        [ text "Edit books"] 
               ]
-        , p [] [ text model.message ] -- error message if one
+        , p [] 
+            [ text model.message ] -- error message if one
+        ]
+
+viewEmpty : Html Msg
+viewEmpty = text ""
+
+viewAddBtn : Html Msg
+viewAddBtn =
+    div []
+        [ button [ class "add-btn"
+                 , type_ "button"
+                 , onClick CreateBook 
+                 ]
+                 [ text "+" ]
         ]
 
 userTable : Model -> Html Msg
@@ -149,7 +197,9 @@ userTable model =
           ( List.concat [ [ thead [] 
                                   [] 
                           ], 
-                          (userTableRows model) ])
+                          (userTableRows model) 
+                        ]
+          )
 
 userTableRows : Model -> List (Html Msg)
 userTableRows model =
@@ -187,7 +237,7 @@ userTableRowEdit book =
                  []
          , span  [] 
                  [ text " - " ]
-         , input [type_ "text", value (safeString book.author) ] 
+         , input [ type_ "text", value (safeString book.author) ] 
                  []
          ]
     , td [ class "book-progression-col" ] 
