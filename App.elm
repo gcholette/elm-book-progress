@@ -3,7 +3,7 @@ module App exposing (..)
 import Http
 import Html as H exposing (Html, form, div, p, h1, a, i, text, program, button, br, table, tr, td, th, span, thead, input)
 import Html.Attributes as HT exposing (class, href, type_, value, placeholder)
-import Html.Events as HV exposing (on, onClick, onBlur, targetValue)
+import Html.Events as HV exposing (on, onClick, onInput, targetValue)
 import Json.Decode.Pipeline as JP exposing (decode, required, optional)
 import Json.Decode as JD exposing (Decoder, at, list, field, int, string)
 import Json.Encode as JE exposing (Value)
@@ -69,8 +69,10 @@ type Msg
     | ToggleEditMode
     | CreateBook
     | DeleteBook Book
+    | UpdateBookLink Book Link
     | UpdateBookTitle Book Title
     | UpdateBookAuthor Book Author
+    | UpdateBookProgression Book String
 
 -- Update
 
@@ -123,6 +125,25 @@ update msg model =
                     bk
             ) model.books) }, updateBookAuthor (book.id, newAuthor))
 
+        UpdateBookLink book newLink ->
+            ({ model | books = (List.map (\bk ->
+                if bk == book then
+                    { bk | link = Just newLink }
+                else
+                    bk
+            ) model.books) }, updateBookLink (book.id, newLink))
+
+        UpdateBookProgression book newProgression ->
+            let
+                prog = Result.withDefault 0 (String.toInt newProgression)                
+            in
+                ({ model | books = (List.map (\bk ->
+                    if bk == book then
+                        { bk | progression = prog }
+                    else
+                        bk
+                ) model.books) }, updateBookProgression (book.id, prog))
+
         DeleteBook book ->
             (model, deleteById book.id)
 
@@ -141,6 +162,22 @@ updateBookAuthor (id, author) =
      let
          request = 
             booksPostUpdateReq (id, (Http.jsonBody (bookAuthorJson (id, author)))) 
+     in
+        Http.send HttpPostUpdateBook request
+
+updateBookLink : (Id, Link) -> Cmd Msg
+updateBookLink (id, link) = 
+     let
+         request = 
+            booksPostUpdateReq (id, (Http.jsonBody (bookLinkJson (id, link)))) 
+     in
+        Http.send HttpPostUpdateBook request
+
+updateBookProgression : (Id, Progression) -> Cmd Msg
+updateBookProgression (id, progression) = 
+     let
+         request = 
+            booksPostUpdateReq (id, (Http.jsonBody (bookProgressionJson (id, progression)))) 
      in
         Http.send HttpPostUpdateBook request
 
@@ -232,6 +269,20 @@ bookAuthorJson (id, author) =
       , ("author", JE.string author)   
       ]
 
+bookLinkJson : (Id, Link) -> JE.Value
+bookLinkJson (id, link) =
+    JE.object
+      [ ("_id", JE.string id)
+      , ("link", JE.string link)   
+      ]
+      
+bookProgressionJson : (Id, Progression) -> JE.Value
+bookProgressionJson (id, progression) =
+    JE.object
+      [ ("_id", JE.string id)
+      , ("progression", JE.int progression)   
+      ]
+
 bookDecoder : Decoder Book
 bookDecoder =
     JP.decode Book
@@ -286,7 +337,7 @@ viewEmpty = text ""
 
 viewAddBtn : Html Msg
 viewAddBtn =
-    div []
+    div [ class "add-btn-section" ]
         [ button [ class "add-btn"
                  , type_ "button"
                  , onClick CreateBook 
@@ -338,11 +389,16 @@ userTableRowEdit book =
     [ td [ class "book-name-col" ] 
          [ (viewEditTitle book)
          , span  [] [ text " - " ]
-         , (viewEditAuthor book) 
+         , (viewEditAuthor book)
+         , span [] [ text " @ "]
+         , (viewEditLink book) 
          ]
     , td [ class "book-progression-col" ] 
          [ div [ class "number-section"]
-               [ input [ type_ "number", value (toString book.progression) ]
+               [ input [ type_ "number" 
+                       , value (toString book.progression) 
+                       , onBlurTarget (UpdateBookProgression book)
+                       ]
                        []
                , span [ onClick (DeleteBook book) ] 
                       [ i [ class "fas fa-trash-alt delete-icon" ] 
@@ -368,6 +424,15 @@ viewEditAuthor book =
           , value (safeString book.author) 
           , onBlurTarget (UpdateBookAuthor book)
           , placeholder "Author"
+          ] 
+          []
+
+viewEditLink : Book -> Html Msg
+viewEditLink book = 
+    input [ type_ "text"
+          , value (safeString book.link) 
+          , onBlurTarget (UpdateBookLink book)
+          , placeholder "Website"
           ] 
           []
 

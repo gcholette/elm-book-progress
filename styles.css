@@ -102,6 +102,7 @@ input[type="number"] {
 
 .edit-books-container {
     margin: 1em;
+    padding-top: 2em;
 }
 .edit-books-btn {
     background: #3a63f7;
@@ -121,6 +122,9 @@ input[type="number"] {
     border-radius: 10em;
     color: white;
     font-size: 17px;
+}
+.add-btn-section {
+    padding-top: 1em;
 }
 a:hover {
     text-decoration: none;
