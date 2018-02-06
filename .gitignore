@@ -1,3 +1,5 @@
+node_modules/*
 elm-stuff/*
 elm_app.js
 elm_app.*
+elm_app
