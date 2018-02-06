@@ -1,6 +1,7 @@
 module App exposing (..)
 
 import Http
+import Data.Book as Book exposing (Book)
 import Html as H exposing (Html, form, div, p, h1, a, i, text, program, button, br, table, tr, td, th, span, thead, input)
 import Html.Attributes as HT exposing (class, href, type_, value, placeholder)
 import Html.Events as HV exposing (on, onClick, onInput, targetValue)
@@ -34,21 +35,6 @@ type alias Model =
     , editMode : Bool
     }
 
-type alias Book =
-    { id : String
-    , title : String
-    , author : Maybe String
-    , link : Maybe String
-    , progression : Int
-    }    
-
-type alias Id = String
-type alias Title = String 
-type alias Author = String 
-type alias Link = String 
-type alias Progression = Int 
-
-
 safeString : Maybe String -> String
 safeString str = Maybe.withDefault "" str
 
@@ -69,9 +55,9 @@ type Msg
     | ToggleEditMode
     | CreateBook
     | DeleteBook Book
-    | UpdateBookLink Book Link
-    | UpdateBookTitle Book Title
-    | UpdateBookAuthor Book Author
+    | UpdateBookLink Book String
+    | UpdateBookTitle Book String
+    | UpdateBookAuthor Book String
     | UpdateBookProgression Book String
 
 -- Update
@@ -149,35 +135,35 @@ update msg model =
 
 -- Http stuff
 
-updateBookTitle : (Id, Title) -> Cmd Msg
+updateBookTitle : (String, String) -> Cmd Msg
 updateBookTitle (id, title) = 
      let
          request = 
-            booksPostUpdateReq (id, (Http.jsonBody (bookTitleJson (id, title)))) 
+            booksPostUpdateReq (id, (Http.jsonBody (Book.titleJson (id, title)))) 
      in
         Http.send HttpPostUpdateBook request
 
-updateBookAuthor : (Id, Author) -> Cmd Msg
+updateBookAuthor : (String, String) -> Cmd Msg
 updateBookAuthor (id, author) = 
      let
          request = 
-            booksPostUpdateReq (id, (Http.jsonBody (bookAuthorJson (id, author)))) 
+            booksPostUpdateReq (id, (Http.jsonBody (Book.authorJson (id, author)))) 
      in
         Http.send HttpPostUpdateBook request
 
-updateBookLink : (Id, Link) -> Cmd Msg
+updateBookLink : (String, String) -> Cmd Msg
 updateBookLink (id, link) = 
      let
          request = 
-            booksPostUpdateReq (id, (Http.jsonBody (bookLinkJson (id, link)))) 
+            booksPostUpdateReq (id, (Http.jsonBody (Book.linkJson (id, link)))) 
      in
         Http.send HttpPostUpdateBook request
 
-updateBookProgression : (Id, Progression) -> Cmd Msg
+updateBookProgression : (String, Int) -> Cmd Msg
 updateBookProgression (id, progression) = 
      let
          request = 
-            booksPostUpdateReq (id, (Http.jsonBody (bookProgressionJson (id, progression)))) 
+            booksPostUpdateReq (id, (Http.jsonBody (Book.progressionJson (id, progression)))) 
      in
         Http.send HttpPostUpdateBook request
 
@@ -212,13 +198,13 @@ bookDeleteReq id =
     } 
     |> Http.request 
 
-booksPostUpdateReq : (Id, Http.Body) -> Http.Request Book
+booksPostUpdateReq : (String, Http.Body) -> Http.Request Book
 booksPostUpdateReq (id, json) = 
     { method = "POST"
     , headers = reqHeaders
     , url = booksUrl ++ "/" ++ id
     , body = json
-    , expect = Http.expectJson bookDecoder
+    , expect = Http.expectJson Book.decoder
     , timeout = Nothing
     , withCredentials = False
     } 
@@ -230,7 +216,7 @@ booksPostEmptyReq =
     , headers = reqHeaders
     , url = booksUrl
     , body = Http.emptyBody
-    , expect = Http.expectJson bookDecoder
+    , expect = Http.expectJson Book.decoder
     , timeout = Nothing
     , withCredentials = False
     } 
@@ -249,53 +235,11 @@ booksGetReq =
     , headers = reqHeaders 
     , url = booksUrl
     , body = Http.emptyBody
-    , expect = Http.expectJson booksDecoder
+    , expect = Http.expectJson Book.listDecoder
     , timeout = Nothing
     , withCredentials = False
     } 
     |> Http.request 
-
-bookTitleJson : (Id, Title) -> JE.Value
-bookTitleJson (id, title) =
-    JE.object
-      [ ("_id", JE.string id)   
-      , ("title", JE.string title)   
-      ]
-
-bookAuthorJson : (Id, Author) -> JE.Value
-bookAuthorJson (id, author) =
-    JE.object
-      [ ("_id", JE.string id)
-      , ("author", JE.string author)   
-      ]
-
-bookLinkJson : (Id, Link) -> JE.Value
-bookLinkJson (id, link) =
-    JE.object
-      [ ("_id", JE.string id)
-      , ("link", JE.string link)   
-      ]
-      
-bookProgressionJson : (Id, Progression) -> JE.Value
-bookProgressionJson (id, progression) =
-    JE.object
-      [ ("_id", JE.string id)
-      , ("progression", JE.int progression)   
-      ]
-
-bookDecoder : Decoder Book
-bookDecoder =
-    JP.decode Book
-        |> required "_id"  string
-        |> required "title" string
-        |> optional "author" (JD.map Just string) Nothing
-        |> optional "link" (JD.map Just string) Nothing
-        |> required "progression" int
-
-
-booksDecoder : Decoder (List Book)
-booksDecoder = 
-    list bookDecoder
 
 onBlurTarget : (String -> msg) -> H.Attribute msg
 onBlurTarget tagger =

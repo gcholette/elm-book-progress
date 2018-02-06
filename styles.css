@@ -7,7 +7,7 @@ body {
     text-align: center;
 }
 body, .books-list::before {
-    background: url('./res/background.jpg') 0 / cover fixed;
+    background: url('./assets/images/background.jpg') 0 / cover fixed;
 }
 h1 {
     font-size: 1.3;
