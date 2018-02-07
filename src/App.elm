@@ -182,48 +182,71 @@ update msg model =
 
 updateBookTitle : ( String, String ) -> Cmd Msg
 updateBookTitle ( id, title ) =
-    Http.send HttpPostUpdateBook (Request.Book.update ( id, (Http.jsonBody (Book.titleJson ( id, title ))) ))
-
+    let
+        body =
+            Http.jsonBody (Book.titleJson ( id, title )) 
+    in
+        (id, body)
+            |> Request.Book.update
+            |> Http.send HttpPostUpdateBook 
 
 updateBookAuthor : ( String, String ) -> Cmd Msg
 updateBookAuthor ( id, author ) =
-    Http.send HttpPostUpdateBook (Request.Book.update ( id, (Http.jsonBody (Book.authorJson ( id, author ))) ))
+    let
+        body =
+            Http.jsonBody (Book.authorJson ( id, author )) 
+    in
+        (id, body)
+            |> Request.Book.update
+            |> Http.send HttpPostUpdateBook 
 
 
 updateBookLink : ( String, String ) -> Cmd Msg
 updateBookLink ( id, link ) =
-    Http.send HttpPostUpdateBook (Request.Book.update ( id, (Http.jsonBody (Book.linkJson ( id, link ))) ))
+    let
+        body =
+            Http.jsonBody (Book.linkJson ( id, link )) 
+    in
+        (id, body)
+            |> Request.Book.update
+            |> Http.send HttpPostUpdateBook 
+
 
 
 updateBookProgression : ( String, Int ) -> Cmd Msg
 updateBookProgression ( id, progression ) =
-    Http.send HttpPostUpdateBook (Request.Book.update ( id, (Http.jsonBody (Book.progressionJson ( id, progression ))) ))
+    let 
+        body = 
+            Http.jsonBody (Book.progressionJson ( id, progression ))
+
+    in
+        (id, body)
+            |> Request.Book.update
+            |> Http.send HttpPostUpdateBook 
 
 
 deleteById : String -> Cmd Msg
 deleteById id =
-    Http.send HttpDeleteBook (Request.Book.delete id)
-
-
-reqHeaders : List Http.Header
-reqHeaders =
-    [ Http.header "Access-Control-Allow-Origin" "*" ]
+    id
+        |> Request.Book.delete
+        |> Http.send HttpDeleteBook
 
 
 postNewBook : Cmd Msg
 postNewBook =
-    Http.send HttpPostCreateBook Request.Book.emptyUpdate
+    Request.Book.create
+        |> Http.send HttpPostCreateBook
 
 
 getBooks : Cmd Msg
 getBooks =
-    Http.send HttpGetBooks Request.Book.get
+    Request.Book.get
+        |> Http.send HttpGetBooks
 
 
 onBlurTarget : (String -> msg) -> H.Attribute msg
 onBlurTarget tagger =
     on "blur" (JD.map tagger targetValue)
-
 
 
 -- Subscriptions
