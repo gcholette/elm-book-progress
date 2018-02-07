@@ -1,4 +1,4 @@
-module Data.Book exposing (..)
+module Data.Book exposing (Book, decoder, listDecoder, titleJson, authorJson, linkJson, progressionJson)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (decode, required, optional)

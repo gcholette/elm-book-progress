@@ -5,9 +5,8 @@ import Data.Book as Book exposing (Book)
 import Html as H exposing (Html, form, div, p, h1, a, i, text, program, button, br, table, tr, td, th, span, thead, input)
 import Html.Attributes as HT exposing (class, href, type_, value, placeholder)
 import Html.Events as HV exposing (on, onClick, onInput, targetValue)
-import Json.Decode.Pipeline as JP exposing (decode, required, optional)
 import Json.Decode as JD exposing (Decoder, at, list, field, int, string)
-import Json.Encode as JE exposing (Value)
+import Request.Book exposing (..)
 
 -- Main
 
@@ -20,11 +19,6 @@ main =
         , subscriptions = subscriptions
         }
 
-apiUrl : String
-apiUrl = "http://localhost:3001/"
-
-booksUrl : String
-booksUrl = apiUrl ++ "books"
 
 -- Model
 
@@ -137,109 +131,37 @@ update msg model =
 
 updateBookTitle : (String, String) -> Cmd Msg
 updateBookTitle (id, title) = 
-     let
-         request = 
-            booksPostUpdateReq (id, (Http.jsonBody (Book.titleJson (id, title)))) 
-     in
-        Http.send HttpPostUpdateBook request
+    Http.send HttpPostUpdateBook (Request.Book.update (id, (Http.jsonBody (Book.titleJson (id, title)))))
 
 updateBookAuthor : (String, String) -> Cmd Msg
 updateBookAuthor (id, author) = 
-     let
-         request = 
-            booksPostUpdateReq (id, (Http.jsonBody (Book.authorJson (id, author)))) 
-     in
-        Http.send HttpPostUpdateBook request
+    Http.send HttpPostUpdateBook (Request.Book.update (id, (Http.jsonBody (Book.authorJson (id, author)))))
 
 updateBookLink : (String, String) -> Cmd Msg
 updateBookLink (id, link) = 
-     let
-         request = 
-            booksPostUpdateReq (id, (Http.jsonBody (Book.linkJson (id, link)))) 
-     in
-        Http.send HttpPostUpdateBook request
+    Http.send HttpPostUpdateBook (Request.Book.update (id, (Http.jsonBody (Book.linkJson (id, link)))))
 
 updateBookProgression : (String, Int) -> Cmd Msg
 updateBookProgression (id, progression) = 
-     let
-         request = 
-            booksPostUpdateReq (id, (Http.jsonBody (Book.progressionJson (id, progression)))) 
-     in
-        Http.send HttpPostUpdateBook request
+    Http.send HttpPostUpdateBook (Request.Book.update (id, (Http.jsonBody (Book.progressionJson (id, progression))))) 
 
 deleteById : String -> Cmd Msg
 deleteById id =
-    let
-        request = bookDeleteReq id
-    in
-        Http.send HttpDeleteBook request  
+    Http.send HttpDeleteBook (Request.Book.delete id)  
 
 reqHeaders : List Http.Header
 reqHeaders = 
-    [ Http.header "Access-Control-Allow-Origin" "*"
-    ]
+    [ Http.header "Access-Control-Allow-Origin" "*"]
+
 
 postNewBook : Cmd Msg
 postNewBook =
-    let
-        request = booksPostEmptyReq
-    in
-        Http.send HttpPostCreateBook request
+    Http.send HttpPostCreateBook Request.Book.emptyUpdate
 
-bookDeleteReq : String -> Http.Request String
-bookDeleteReq id = 
-    { method = "DELETE"
-    , headers = reqHeaders
-    , url = booksUrl ++ "/" ++ id
-    , body = Http.emptyBody
-    , expect = Http.expectString
-    , timeout = Nothing
-    , withCredentials = False
-    } 
-    |> Http.request 
-
-booksPostUpdateReq : (String, Http.Body) -> Http.Request Book
-booksPostUpdateReq (id, json) = 
-    { method = "POST"
-    , headers = reqHeaders
-    , url = booksUrl ++ "/" ++ id
-    , body = json
-    , expect = Http.expectJson Book.decoder
-    , timeout = Nothing
-    , withCredentials = False
-    } 
-    |> Http.request 
-    
-booksPostEmptyReq : Http.Request Book
-booksPostEmptyReq = 
-    { method = "POST"
-    , headers = reqHeaders
-    , url = booksUrl
-    , body = Http.emptyBody
-    , expect = Http.expectJson Book.decoder
-    , timeout = Nothing
-    , withCredentials = False
-    } 
-    |> Http.request 
 
 getBooks : Cmd Msg
 getBooks =
-    let
-        request = booksGetReq
-    in
-        Http.send HttpGetBooks request
-        
-booksGetReq : Http.Request (List Book)
-booksGetReq = 
-    { method = "GET"
-    , headers = reqHeaders 
-    , url = booksUrl
-    , body = Http.emptyBody
-    , expect = Http.expectJson Book.listDecoder
-    , timeout = Nothing
-    , withCredentials = False
-    } 
-    |> Http.request 
+        Http.send HttpGetBooks Request.Book.get
 
 onBlurTarget : (String -> msg) -> H.Attribute msg
 onBlurTarget tagger =
