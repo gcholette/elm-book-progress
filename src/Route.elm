@@ -6,21 +6,14 @@ import Navigation exposing (Location)
 import UrlParser as Url exposing ((</>), Parser, oneOf, parseHash, s, string)
 
 type Route 
-    = Home
-    | Root
-    | Login
-    | Logout
-    | Signup
+    = Root
     | UserProgression
 
 
 route : Parser (Route -> a) a
 route =
     oneOf
-        [ Url.map Home (s "")
-        , Url.map Login (s "login")
-        , Url.map Logout (s "logout")
-        , Url.map Signup (s "signup")
+        [ Url.map Root (s "")
         , Url.map UserProgression (s "userprogression")
         ]
 
@@ -30,20 +23,8 @@ routeToString page =
     let
         pieces =
             case page of
-                Home ->
-                    []
-
                 Root ->
                     []
-
-                Login ->
-                    [ "login" ]
-
-                Logout ->
-                    [ "logout" ]
-
-                Signup ->
-                    [ "register" ]
 
                 UserProgression ->
                     [ "user" ]

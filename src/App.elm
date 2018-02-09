@@ -6,7 +6,11 @@ import Html as H exposing (Html, form, div, p, h1, a, i, text, program, button, 
 import Html.Attributes as HT exposing (class, href, type_, value, placeholder)
 import Html.Events as HV exposing (on, onClick, onInput, targetValue)
 import Json.Decode as JD exposing (Decoder, at, list, field, int, string)
+import Navigation exposing (Location)
 import Request.Book exposing (..)
+import Page.UserProgression
+import Helpers exposing (..)
+import Route exposing (Route)
 
 
 -- Main
@@ -34,14 +38,28 @@ type alias Model =
     }
 
 
-safeString : Maybe String -> String
-safeString str =
-    Maybe.withDefault "" str
+
+type alias Model2 =
+    { pageState : PageState}
+
+init2 : JD.Value -> Location -> ( Model2, Cmd Msg )
+init2 val location =
+    setRoute (Route.fromLocation location)
+        { pageState = Loaded initialPage }
 
 
-safeInt : Maybe Int -> Int
-safeInt x =
-    Maybe.withDefault 0 x
+setRoute : Maybe Route -> Model2 -> ( Model2, Cmd Msg )
+setRoute maybeRoute model =
+    case maybeRoute of 
+        Nothing ->
+         ({ model | pageState = Loaded Blank }, Cmd.none)
+
+        Just Route.Root ->
+          ({ model | pageState = Loaded Root }, Cmd.none)
+
+        Just Route.UserProgression ->
+          ({ model | pageState = Loaded UserProgression }, Cmd.none)
+            
 
 
 init : ( Model, Cmd Msg )
@@ -49,8 +67,19 @@ init =
     ( Model "Technical Books progression" [] "" False, getBooks )
 
 
+initialPage : Page
+initialPage =
+    Blank
 
--- Messages
+type Page
+    = Blank
+    | Root
+    | UserProgression
+
+
+type PageState
+    = Loaded Page
+    | TransitioningFrom Page
 
 
 type Msg
