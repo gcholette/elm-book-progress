@@ -24,10 +24,10 @@ routeToString page =
         pieces =
             case page of
                 Root ->
-                    []
+                    [ "" ]
 
                 UserProgression ->
-                    [ "user" ]
+                    [ "userprogression" ]
     in
     "#/" ++ String.join "/" pieces
 
@@ -48,6 +48,6 @@ modifyUrl =
 fromLocation : Location -> Maybe Route
 fromLocation location =
     if String.isEmpty location.hash then
-        Just Root
+        Just UserProgression
     else
         parseHash route location

@@ -28,7 +28,7 @@ init =
             Request.Book.get 
                 |> Http.toTask
     in
-    Task.map (Model [] "books" False) loadBooks 
+    Task.map (Model [] "Technical books" False) loadBooks 
 
 type Msg
     = HttpGetBooks (Result Http.Error (List Book))

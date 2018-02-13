@@ -32,7 +32,7 @@ type alias Model =
 init : JD.Value -> Location -> ( Model, Cmd Msg )
 init val location =
     setRoute (Route.fromLocation location)
-        { pageState = Loaded initialUserPage }
+        { pageState = Loaded initialPage }
 
 
 setRoute : Maybe Route -> Model -> ( Model, Cmd Msg )
@@ -67,10 +67,6 @@ initialPage : Page
 initialPage =
     Blank
 
-
-initialUserPage : Page
-initialUserPage =
-    UserProgression (UserProgression.Model [] "" False [])
 
 -- Update
 
@@ -107,7 +103,6 @@ updatePage page msg model =
             (model, Cmd.none)
 
             
-
 
 
 -- Subscriptions
