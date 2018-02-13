@@ -5,8 +5,10 @@ import Html.Attributes as Attr
 import Navigation exposing (Location)
 import UrlParser as Url exposing ((</>), Parser, oneOf, parseHash, s, string)
 
-type Route 
+
+type Route
     = Root
+    | Home
     | UserProgression
 
 
@@ -14,6 +16,7 @@ route : Parser (Route -> a) a
 route =
     oneOf
         [ Url.map Root (s "")
+        , Url.map Home (s "home")
         , Url.map UserProgression (s "userprogression")
         ]
 
@@ -26,10 +29,14 @@ routeToString page =
                 Root ->
                     [ "" ]
 
+                Home ->
+                    [ "home" ]
+
                 UserProgression ->
                     [ "userprogression" ]
     in
-    "#/" ++ String.join "/" pieces
+        "#/" ++ String.join "/" pieces
+
 
 
 -- PUBLIC HELPERS --

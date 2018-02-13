@@ -4,7 +4,7 @@ import Json.Decode as JD exposing (Decoder, at, list, field, int, string)
 import Html exposing (Html, Attribute)
 import Html.Events exposing (on, targetValue)
 
- 
+
 safeString : Maybe String -> String
 safeString str =
     Maybe.withDefault "" str

@@ -1,0 +1,9 @@
+module Views.Home exposing (view)
+
+import Html exposing (..)
+import Html.Attributes exposing (..)
+
+
+view : Html msg
+view =
+    h1 [] [ text "home view!" ]

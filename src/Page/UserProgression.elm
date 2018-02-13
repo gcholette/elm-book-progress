@@ -3,12 +3,12 @@ module Page.UserProgression exposing (Model, Msg, init, update, view)
 import Html as H exposing (Html, form, div, p, h1, a, i, text, program, button, br, table, tr, td, th, span, thead, input)
 import Html.Attributes as HT exposing (class, href, type_, value, placeholder)
 import Html.Events as HV exposing (on, onClick, onInput, targetValue)
-import Page.Errored exposing (PageLoadError, pageLoadError)
 import Helpers exposing (..)
 import Http
 import Task exposing (Task)
 import Request.Book
 import Data.Book as Book exposing (Book)
+
 
 type alias Model =
     { errors : List String
@@ -17,18 +17,22 @@ type alias Model =
     , books : List Book
     }
 
+
+
 --init : ( Model, Cmd Msg )
 --init =
 --    ( Model "Books progression" [] [] False, getBooks )
+
 
 init : Task Http.Error Model
 init =
     let
         loadBooks =
-            Request.Book.get 
+            Request.Book.get
                 |> Http.toTask
     in
-    Task.map (Model [] "Technical books" False) loadBooks 
+        Task.map (Model [] "Technical books" False) loadBooks
+
 
 type Msg
     = HttpGetBooks (Result Http.Error (List Book))
@@ -149,6 +153,7 @@ update msg model =
             ( model, deleteById book.id )
 
 
+
 -- Http stuff
 
 
@@ -156,45 +161,44 @@ updateBookTitle : ( String, String ) -> Cmd Msg
 updateBookTitle ( id, title ) =
     let
         body =
-            Http.jsonBody (Book.titleJson ( id, title )) 
+            Http.jsonBody (Book.titleJson ( id, title ))
     in
-        (id, body)
+        ( id, body )
             |> Request.Book.update
-            |> Http.send HttpPostUpdateBook 
+            |> Http.send HttpPostUpdateBook
+
 
 updateBookAuthor : ( String, String ) -> Cmd Msg
 updateBookAuthor ( id, author ) =
     let
         body =
-            Http.jsonBody (Book.authorJson ( id, author )) 
+            Http.jsonBody (Book.authorJson ( id, author ))
     in
-        (id, body)
+        ( id, body )
             |> Request.Book.update
-            |> Http.send HttpPostUpdateBook 
+            |> Http.send HttpPostUpdateBook
 
 
 updateBookLink : ( String, String ) -> Cmd Msg
 updateBookLink ( id, link ) =
     let
         body =
-            Http.jsonBody (Book.linkJson ( id, link )) 
+            Http.jsonBody (Book.linkJson ( id, link ))
     in
-        (id, body)
+        ( id, body )
             |> Request.Book.update
-            |> Http.send HttpPostUpdateBook 
-
+            |> Http.send HttpPostUpdateBook
 
 
 updateBookProgression : ( String, Int ) -> Cmd Msg
 updateBookProgression ( id, progression ) =
-    let 
-        body = 
+    let
+        body =
             Http.jsonBody (Book.progressionJson ( id, progression ))
-
     in
-        (id, body)
+        ( id, body )
             |> Request.Book.update
-            |> Http.send HttpPostUpdateBook 
+            |> Http.send HttpPostUpdateBook
 
 
 deleteById : String -> Cmd Msg
@@ -214,6 +218,7 @@ getBooks : Cmd Msg
 getBooks =
     Request.Book.get
         |> Http.send HttpGetBooks
+
 
 
 -- View
@@ -237,10 +242,16 @@ view model =
             , class "edit-books-container"
             ]
             [ button [ class "edit-books-btn" ]
-                [ text "Edit books" ]
+                [ text
+                    (if (not model.editMode) then
+                        "Edit books"
+                     else
+                        "View books"
+                    )
+                ]
             ]
         , p []
-            [ text (String.concat model.errors)]
+            [ text (String.concat model.errors) ]
 
         -- error message if one
         ]

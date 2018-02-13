@@ -7,7 +7,6 @@ import Time exposing (Time)
 import Request.Helpers exposing (apiUrl)
 
 
-
 corsHeader : String
 corsHeader =
     "Access-Control-Allow-Origin"
@@ -15,8 +14,8 @@ corsHeader =
 
 get : Http.Request (List Book)
 get =
-    apiUrl "books/" 
-        |> HttpBuilder.get         
+    apiUrl "books/"
+        |> HttpBuilder.get
         |> withHeader corsHeader "*"
         |> withExpect (Http.expectJson Book.listDecoder)
         |> HttpBuilder.toRequest
@@ -31,7 +30,7 @@ delete id =
         |> HttpBuilder.toRequest
 
 
-update : ( String, Http.Body) -> Http.Request Book
+update : ( String, Http.Body ) -> Http.Request Book
 update ( id, json ) =
     apiUrl ("books/" ++ id)
         |> HttpBuilder.post
