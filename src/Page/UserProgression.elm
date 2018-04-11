@@ -5,6 +5,7 @@ import Html.Attributes as HT exposing (class, href, type_, value, placeholder)
 import Html.Events as HV exposing (on, onClick, onInput, targetValue)
 import Helpers exposing (..)
 import Http
+import Json.Encode as Encode
 import Task exposing (Task)
 import Request.Book
 import Data.Book as Book exposing (Book)
@@ -17,6 +18,9 @@ type alias Model =
     , books : List Book
     }
 
+type alias BookDecoder a = ( String, a ) -> Encode.Value 
+
+type alias Id = String
 
 
 --init : ( Model, Cmd Msg )
@@ -94,7 +98,7 @@ update msg model =
                         model.books
                     )
               }
-            , updateBookTitle ( book.id, newTitle )
+            , updateBookField Book.titleJson ( book.id, newTitle )
             )
 
         UpdateBookAuthor book newAuthor ->
@@ -110,7 +114,7 @@ update msg model =
                         model.books
                     )
               }
-            , updateBookAuthor ( book.id, newAuthor )
+            , updateBookField Book.authorJson ( book.id, newAuthor )
             )
 
         UpdateBookLink book newLink ->
@@ -126,7 +130,7 @@ update msg model =
                         model.books
                     )
               }
-            , updateBookLink ( book.id, newLink )
+            , updateBookField Book.linkJson ( book.id, newLink )
             )
 
         UpdateBookProgression book newProgression ->
@@ -146,7 +150,7 @@ update msg model =
                             model.books
                         )
                   }
-                , updateBookProgression ( book.id, prog )
+                , updateBookField Book.progressionJson ( book.id, prog )
                 )
 
         DeleteBook book ->
@@ -156,45 +160,11 @@ update msg model =
 
 -- Http stuff
 
-
-updateBookTitle : ( String, String ) -> Cmd Msg
-updateBookTitle ( id, title ) =
+updateBookField : BookDecoder a -> ( Id, a ) -> Cmd Msg
+updateBookField jsonEncoder ( id, field ) =
     let
         body =
-            Http.jsonBody (Book.titleJson ( id, title ))
-    in
-        ( id, body )
-            |> Request.Book.update
-            |> Http.send HttpPostUpdateBook
-
-
-updateBookAuthor : ( String, String ) -> Cmd Msg
-updateBookAuthor ( id, author ) =
-    let
-        body =
-            Http.jsonBody (Book.authorJson ( id, author ))
-    in
-        ( id, body )
-            |> Request.Book.update
-            |> Http.send HttpPostUpdateBook
-
-
-updateBookLink : ( String, String ) -> Cmd Msg
-updateBookLink ( id, link ) =
-    let
-        body =
-            Http.jsonBody (Book.linkJson ( id, link ))
-    in
-        ( id, body )
-            |> Request.Book.update
-            |> Http.send HttpPostUpdateBook
-
-
-updateBookProgression : ( String, Int ) -> Cmd Msg
-updateBookProgression ( id, progression ) =
-    let
-        body =
-            Http.jsonBody (Book.progressionJson ( id, progression ))
+            Http.jsonBody (jsonEncoder ( id, field ))
     in
         ( id, body )
             |> Request.Book.update
@@ -252,8 +222,6 @@ view model =
             ]
         , p []
             [ text (String.concat model.errors) ]
-
-        -- error message if one
         ]
 
 
